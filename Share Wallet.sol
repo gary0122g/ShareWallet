@@ -4,14 +4,17 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 
 contract ShareWallet {
 
-    using SafeMath for uint; 
+    event limitChange(address indexed _forwho, address indexed _byWhom, uint _oldAmount, uint _newAmount);
+    event BalanceChange(address _who, uint _oldBalance, uint _newBalance);
 
-    address public owner;
+    using SafeMath for uint; 
+    
+    address  public  owner;
     mapping(address => uint)  withdrawLimit;
     mapping(address => uint)  balance;
 
-    constructor() {
-         owner = msg.sender;
+    constructor()  {
+        owner = msg.sender;
     }
 
     function revceiveMoney() public payable{
@@ -28,15 +31,18 @@ contract ShareWallet {
     function increaseLimit(address _who, uint _amount) public {
         require(msg.sender == owner, "you are not the owner");
         withdrawLimit[_who] = withdrawLimit[_who].add(_amount);
+        emit limitChange(_who, msg.sender, withdrawLimit[_who], withdrawLimit[_who].add(_amount));
     }
 
     function decreaseLimit(address _who, uint _amount) public {
         require(msg.sender == owner, "you are not the owner");
+        emit limitChange(_who, msg.sender , withdrawLimit[_who], withdrawLimit[_who].sub(_amount));
         withdrawLimit[_who] = withdrawLimit[_who].sub(_amount);
     }
 
     function withdrawPartial(uint _amount) public {
         require(_amount <= balance[msg.sender]);
+        emit BalanceChange(msg.sender, balance[msg.sender], balance[msg.sender]- _amount);
         balance[msg.sender] = balance[msg.sender].sub(_amount);
         payable(msg.sender).transfer(_amount);
     }
@@ -49,7 +55,8 @@ contract ShareWallet {
         return withdrawLimit[msg.sender];
     }
     
-    fallback() external {
+    receive()  external payable{
         revceiveMoney;
     }
 }
+
